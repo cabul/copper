@@ -8,14 +8,14 @@ run() { python $copper $*; exit $?; }
 
 die() { echo "error: no $copper"; exit 128; }
 
-check && run
+check && run $*
 
 gitroot="$(git rev-parse --show-toplevel 2>/dev/null)"
 [ $? -eq 0 ] || die
 
 while [ "$(pwd)" != "$gitroot" ] ; do
     cd ..
-    check && run
+    check && run $*
 done
 
 die
