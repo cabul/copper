@@ -8,4 +8,5 @@ setup(name='copper',
       author_email='calvin.bulla@gmail.com',
       license='MIT',
       scripts=['bin/copper'],
-      packages=['copper'])
+      packages=['copper'],
+      install_requires=['tinydb'])
