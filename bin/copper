@@ -1,6 +1,6 @@
 #!/bin/bash
 
-copper=copperfile.py
+copper=index.py
 
 check() { test -f $copper; }
 
