@@ -1,6 +1,6 @@
 '''simple copper example'''
 
-from copper import Copper
+from copper import *
 
 @variable
 def benchmark():
