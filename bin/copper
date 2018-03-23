@@ -1,0 +1,21 @@
+#!/bin/bash
+
+copper=copperfile.py
+
+check() { test -f $copper; }
+
+run() { python $copper $*; exit $?; }
+
+die() { echo "error: no $copper"; exit 128; }
+
+check && run
+
+gitroot="$(git rev-parse --show-toplevel 2>/dev/null)"
+[ $? -eq 0 ] || die
+
+while [ "$(pwd)" != "$gitroot" ] ; do
+    cd ..
+    check && run
+done
+
+die
