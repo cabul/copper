@@ -4,7 +4,6 @@ app = Copper('run experiments')
 
 @app.variable
 def benchmark():
-    '''list of benchmarks to run'''
     return ['matmul', 'astar']
 
 @app.task
