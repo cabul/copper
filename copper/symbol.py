@@ -1,14 +1,4 @@
-level = 1
-
-def debug_enter(*msg):
-    global level
-    print '{}> {}'.format('-'*level, msg)
-    level += 1
-
-def debug_exit(*msg):
-    global level
-    level -= 1
-    print '{}< {}'.format('-'*level, msg)
+from tinydb import Query, where
 
 class Symbol:
     @staticmethod
@@ -44,6 +34,7 @@ class Symbol:
         return [(v, self.ctx.variables[v]) for v in self.varnames]
 
     def register(self, ctx):
+        self.children = []
         for parent in self.parents:
             parent.children.append(self)
         self.ctx = ctx
@@ -58,41 +49,69 @@ class Symbol:
         self.parents.extend(tasks)
 
     def filter(self, args):
-        return { k:(v if not isinstance(v, list) or len(v) > 1 else v[0]) for k,v
-                in args.iteritems() if k in self.varnames and v }
+        return { k:v for k,v in args.iteritems() if k in self.varnames and v }
+
+    def filter_all(self, args):
+        return { k:(v if isinstance(v, list) else [v])
+            for k,v in args.iteritems() if k in self.varnames and v }
 
     def expand(self, args):
-        debug_enter('expand', self.name, args)
-        inputs = [{}]
-        for key, sym in self.varitems:
-            avail = sym.resolve(**args)
-            values = args[key] if key in args else avail
-            if not isinstance(values, list): values = [values]
+        def expand_rec(varitems, inputs, args):
+            if len(varitems) == 0: return inputs
+            (key, var), rest = varitems[0], varitems[1:]
             new_inputs = []
-            for val in values:
-                if not val in avail:
-                    raise ValueError('{}: {}'.format(key, val))
-                for inp in inputs:
+            for inp in inputs:
+                avail = var.resolve(inp)
+                values = args[key] if key in args else avail
+                for val in values:
+                    if not val in avail:
+                        raise ValueError('{}: {}'.format(key, val))
                     new_inp = inp.copy()
-                    new_inp[key] = val
+                    new_inp[var.name] = val
                     new_inputs.append(new_inp)
-            inputs = new_inputs
-        debug_exit(inputs)
-        return inputs
+            return expand_rec(rest, new_inputs, args)
+        return expand_rec(self.varitems, [{}], args)
 
-    def resolve(self, **args):
-        debug_enter('resolve', self.name, args)
+    def read_cache(self, args):
+        qu = where('name') == self.name
+        for k, v in args.iteritems():
+            qu = qu & (where('var')[k] == v)
+        row = self.ctx.db.get(qu)
+        if not row: return False, None
+        return True, row['ret']
+
+    def write_cache(self, args, ret):
+        self.ctx.db.insert({
+            'name': self.name,
+            'var': args,
+            'ret': ret
+        })
+
+    def invalidate(self, args):
+        args = self.filter(args)
+        qu = where('name') == self.name
+        for k, v in args.iteritems():
+            qu = qu & (where('var')[k] == v)
+        rows = self.ctx.db.search(qu)
+        self.ctx.db.remove(doc_ids=[row.doc_id for row in rows])
+
+    def resolve(self, args, force=False):
         args = self.filter(args)
         for parent in self.parents:
-            parent.resolve_all(**args)
+            parent.resolve_all(args)
+        found, ret = self.read_cache(args)
+        if found and not force: return ret
         ret = self.fn(**args)
-        debug_exit(ret)
+        if not self.nocache:
+            self.write_cache(args, ret)
+        for child in self.children:
+            child.invalidate(args)
         return ret
 
-    def resolve_all(self, **args):
-        args = self.filter(args)
+    def resolve_all(self, args, force=False):
+        args = self.filter_all(args)
         inputs = self.expand(args)
         for inp in inputs:
-            self.resolve(**inp)
+            self.resolve(inp, force)
 
 

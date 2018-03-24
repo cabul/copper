@@ -13,7 +13,6 @@ def build(benchmark):
 
 @app.task
 @depends(build)
-@nocache
 def run(benchmark):
     '''run a benchmark'''
     print 'Running {}'.format(benchmark)
@@ -27,6 +26,7 @@ def metric(benchmark):
         return ['branches']
 
 @app.task
+@nocache
 def plot(benchmark, metric):
     print 'Plotting {} for {}'.format(metric, benchmark)
 
