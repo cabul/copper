@@ -1,17 +1,18 @@
-from symbol import Symbol, Task, Variable
+from symbol import Symbol
 from collections import OrderedDict
 from argparse import ArgumentParser
 from tinydb import TinyDB, Query
+import sys
 
 def depends(*ts):
     def decorator(fn):
-        sym = Symbol(fn)
-        sym.depends.extend(ts)
+        sym = Symbol.make(fn)
+        sym.depends(ts)
         return sym
     return decorator
 
 def nocache(sym):
-    sym = Symbol(sym)
+    sym = Symbol.make(sym)
     sym.nocache = True
     return sym
 
@@ -28,12 +29,14 @@ class Copper:
         self.db = TinyDB(cache)
 
     def variable(self, sym):
-        sym = Variable(sym)
+        sym = Symbol.make(sym)
         self.variables[sym.name] = sym
+        sym.register(self)
         return sym
     def task(self, sym):
-        sym = Task(sym)
+        sym = Symbol.make(sym)
         self.tasks[sym.name] = sym
+        sym.register(self)
         return sym
 
     def clean(self):
@@ -59,6 +62,8 @@ class Copper:
         parser.add_argument('-c', '--clean', action='store_true', help='clean copper cache')
         parser.add_argument('-l', '--list', action='store_true', help='list copper tasks/variables')
         parser.add_argument('task', nargs='?', help='see -l for a list of tasks')
+        for name, var in self.variables.iteritems():
+            parser.add_argument('--{}'.format(name), nargs='+', help=var.doc)
         args = parser.parse_args()
         if args.clean:
             self.clean()
@@ -66,4 +71,13 @@ class Copper:
         if not args.task or args.list:
             self.list()
             return
+        try:
+            task = self.tasks[args.task]
+            task.resolve_all(**vars(args))
+        except KeyError as e:
+            print >> sys.stderr, 'copper: error: unrecognized task: {}'.format(e)
+            sys.exit(1)
+        except ValueError as e:
+            print >> sys.stderr, 'copper: error: invalid value for {}'.format(e)
+            sys.exit(1)
 

@@ -6,7 +6,7 @@ check() { test -f $copper; }
 
 run() { python $copper $*; exit $?; }
 
-die() { echo "error: no $copper"; exit 128; }
+die() { echo "copper: error: no $copper"; exit 128; }
 
 check && run $*
 
