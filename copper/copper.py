@@ -56,24 +56,10 @@ class Copper:
         self.list_dict(self.variables)
         print 'Tasks:'
         self.list_dict(self.tasks)
-
-    def main(self):
-        parser = ArgumentParser(prog='copper', description=self.description)
-        parser.add_argument('-c', '--clean', action='store_true', help='clean copper cache')
-        parser.add_argument('-l', '--list', action='store_true', help='list copper tasks/variables')
-        parser.add_argument('-f', '--force', action='store_true', help='force cache overwrite')
-        parser.add_argument('task', nargs='?', help='see -l for a list of tasks')
-        for name, var in self.variables.iteritems():
-            parser.add_argument('--{}'.format(name), nargs='+', help=var.doc)
-        args = parser.parse_args()
-        if args.clean:
-            self.clean()
-            return
-        if not args.task or args.list:
-            self.list()
-            return
+    
+    def run(self, args):
         try:
-            task = self.tasks[args.task]
+            task = self.tasks[args.symbol]
             task.resolve_all(vars(args), args.force)
         except KeyError as e:
             print >> sys.stderr, 'copper: error: unrecognized task: {}'.format(e)
@@ -81,4 +67,36 @@ class Copper:
         except ValueError as e:
             print >> sys.stderr, 'copper: error: invalid value for {}'.format(e)
             sys.exit(1)
+
+    def update(self, args):
+        try:
+            var = self.variables[args.symbol]
+            var.resolve_all(vars(args), True)
+        except KeyError as e:
+            print >> sys.stderr, 'copper: error: unrecognized variable: {}'.format(e)
+            sys.exit(1)
+        except ValueError as e:
+            print >> sys.stderr, 'copper: error: invalid value for {}'.format(e)
+            sys.exit(1)
+
+    def main(self):
+        parser = ArgumentParser(prog='copper', description=self.description)
+        parser.add_argument('-c', '--clean', action='store_true', help='clean copper cache')
+        parser.add_argument('-l', '--list', action='store_true', help='list copper tasks/variables')
+        parser.add_argument('-f', '--force', action='store_true', help='force cache overwrite')
+        parser.add_argument('-u', '--update', action='store_true', help='update a variable')
+        parser.add_argument('symbol', nargs='?', help='see -l for a list of tasks')
+        for name, var in self.variables.iteritems():
+            parser.add_argument('--{}'.format(name), nargs='+', help=var.doc)
+        args = parser.parse_args()
+        if args.clean:
+            self.clean()
+            return
+        if not args.symbol or args.list:
+            self.list()
+            return
+        if args.update:
+            self.update(args)
+        else:
+            self.run(args)
 

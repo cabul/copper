@@ -81,6 +81,7 @@ class Symbol:
         return True, row['ret']
 
     def write_cache(self, args, ret):
+        self.invalidate(args)
         self.ctx.db.insert({
             'name': self.name,
             'var': args,
@@ -99,9 +100,10 @@ class Symbol:
         args = self.filter(args)
         for parent in self.parents:
             parent.resolve_all(args)
-        found, ret = self.read_cache(args)
-        if found and not force: return ret
+        found, old = self.read_cache(args)
+        if found and not force: return old
         ret = self.fn(**args)
+        if found and old == ret and old != None: return ret
         if not self.nocache:
             self.write_cache(args, ret)
         for child in self.children:
