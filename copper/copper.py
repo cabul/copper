@@ -65,18 +65,23 @@ class Copper:
         if not args.symbol:
             self.list_env()
             return
-        if not args.symbol in self.variables:
+        if args.symbol in self.variables:
+            sym = self.variables[args.symbol]
+        elif args.symbol in self.tasks:
+            sym = self.tasks[args.symbol]
+        else:
             raise CopperError('unknown variable: {}'.format(args.symbol))
-        var = self.variables[args.symbol]
-        ret = var.resolve_all(vars(args), args.force)
-        for (key, val) in ret:
+        ret = sym.list_all(vars(args))
+        for row in ret:
+            key, val = row['var'], row['ret']
             sep = '* '
             for k, v in key.iteritems():
                 print '{}{}: {}'.format(sep, k, v)
                 sep = '  '
+            if val == None: continue
+            if not isinstance(v, list): v = [v]
             for v in val:
                 print '  - {}'.format(v)
-
 
     def update(self, args):
         if not args.symbol in self.variables:

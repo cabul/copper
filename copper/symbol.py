@@ -73,6 +73,7 @@ class Symbol:
             return expand_rec(rest, new_inputs, args)
         return expand_rec(self.varitems, [{}], args)
 
+
     def read_cache(self, args):
         qu = where('name') == self.name
         for k, v in args.iteritems():
@@ -118,5 +119,12 @@ class Symbol:
         for inp in inputs:
             ret.append((inp, self.resolve(inp, force)))
         return ret
+
+    def list_all(self, args):
+        args = self.filter_all(args)
+        qu = where('name') == self.name
+        for k, v in args.iteritems():
+            qu = qu & (where('var')[k] == v)
+        return self.ctx.db.search(qu)
 
 
