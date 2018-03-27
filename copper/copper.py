@@ -51,14 +51,14 @@ class Copper:
         for k, v in d.iteritems():
             if v.doc:
                 pad = ' ' * (max_len - len(k))
-                print '  {}{} - {}'.format(k, pad, v.doc)
+                print '  - {}{}  {}'.format(k, pad, v.doc)
             else:
-                print '  {}'.format(k)
+                print '  - {}'.format(k)
 
     def list_env(self):
-        print 'Variables:'
+        print '* variables:'
         self.list_dict(self.variables)
-        print 'Tasks:'
+        print '* tasks:'
         self.list_dict(self.tasks)
 
     def list(self, args):
