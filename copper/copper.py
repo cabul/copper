@@ -79,6 +79,9 @@ class Copper:
             print >> sys.stderr, 'copper: error: invalid value for {}'.format(e)
             sys.exit(1)
 
+    def log(self, msg):
+        print '-- {}'.format(msg)
+
     def main(self):
         parser = ArgumentParser(prog='copper', description=self.description)
         parser.add_argument('-c', '--clean', action='store_true', help='clean copper cache')
