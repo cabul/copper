@@ -90,7 +90,7 @@ class Copper:
         var.resolve_all(vars(args), True)
     
     def run(self, args):
-        if not args.symbol in self.variables:
+        if not args.symbol in self.tasks:
             raise CopperError('unknown task: {}'.format(args.symbol))
         task = self.tasks[args.symbol]
         task.resolve_all(vars(args), args.force)
