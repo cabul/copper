@@ -79,7 +79,7 @@ class Copper:
                 print '{}{}: {}'.format(sep, k, v)
                 sep = '  '
             if val == None: continue
-            if not isinstance(v, list): v = [v]
+            if not isinstance(val, list): val = [val]
             for v in val:
                 print '  - {}'.format(v)
 
