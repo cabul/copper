@@ -1,0 +1,2 @@
+class CopperError(Exception):
+    pass

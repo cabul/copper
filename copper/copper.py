@@ -1,8 +1,12 @@
-from symbol import Symbol
+from .symbol import Symbol
+from .error import CopperError
 from collections import OrderedDict
 from argparse import ArgumentParser
 from tinydb import TinyDB, Query
+from pprint import PrettyPrinter
 import sys
+
+pp = PrettyPrinter(indent=4)
 
 def depends(*ts):
     def decorator(fn):
@@ -51,36 +55,43 @@ class Copper:
             else:
                 print '  {}'.format(k)
 
-    def list(self):
+    def list_env(self):
         print 'Variables:'
         self.list_dict(self.variables)
         print 'Tasks:'
         self.list_dict(self.tasks)
-    
-    def run(self, args):
-        try:
-            task = self.tasks[args.symbol]
-            task.resolve_all(vars(args), args.force)
-        except KeyError as e:
-            print >> sys.stderr, 'copper: error: unrecognized task: {}'.format(e)
-            sys.exit(1)
-        except ValueError as e:
-            print >> sys.stderr, 'copper: error: invalid value for {}'.format(e)
-            sys.exit(1)
+
+    def list(self, args):
+        if not args.symbol:
+            self.list_env()
+            return
+        if not args.symbol in self.variables:
+            raise CopperError('unknown variable: {}'.format(args.symbol))
+        var = self.variables[args.symbol]
+        ret = var.resolve_all(vars(args), args.force)
+        for (key, val) in ret:
+            sep = '* '
+            for k, v in key.iteritems():
+                print '{}{}: {}'.format(sep, k, v)
+                sep = '  '
+            for v in val:
+                print '  - {}'.format(v)
+
 
     def update(self, args):
-        try:
-            var = self.variables[args.symbol]
-            var.resolve_all(vars(args), True)
-        except KeyError as e:
-            print >> sys.stderr, 'copper: error: unrecognized variable: {}'.format(e)
-            sys.exit(1)
-        except ValueError as e:
-            print >> sys.stderr, 'copper: error: invalid value for {}'.format(e)
-            sys.exit(1)
+        if not args.symbol in self.variables:
+            raise CopperError('unknown variable: {}'.format(args.symbol))
+        var = self.variables[args.symbol]
+        var.resolve_all(vars(args), True)
+    
+    def run(self, args):
+        if not args.symbol in self.variables:
+            raise CopperError('unknown task: {}'.format(args.symbol))
+        task = self.tasks[args.symbol]
+        task.resolve_all(vars(args), args.force)
 
     def log(self, msg):
-        print '-- {}'.format(msg)
+        print 'copper: {}'.format(msg)
 
     def main(self):
         parser = ArgumentParser(prog='copper', description=self.description)
@@ -96,7 +107,7 @@ class Copper:
             self.clean()
             return
         if not args.symbol or args.list:
-            self.list()
+            self.list(args)
             return
         if args.update:
             self.update(args)

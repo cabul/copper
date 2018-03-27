@@ -1,4 +1,5 @@
 from tinydb import Query, where
+from .error import CopperError
 
 class Symbol:
     @staticmethod
@@ -65,7 +66,7 @@ class Symbol:
                 values = args[key] if key in args else avail
                 for val in values:
                     if not val in avail:
-                        raise ValueError('{}: {}'.format(key, val))
+                        raise CopperError('invalid {}: {}'.format(key, val))
                     new_inp = inp.copy()
                     new_inp[var.name] = val
                     new_inputs.append(new_inp)
@@ -113,7 +114,9 @@ class Symbol:
     def resolve_all(self, args, force=False):
         args = self.filter_all(args)
         inputs = self.expand(args)
+        ret = []
         for inp in inputs:
-            self.resolve(inp, force)
+            ret.append((inp, self.resolve(inp, force)))
+        return ret
 
 
